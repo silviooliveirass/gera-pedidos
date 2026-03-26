@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 interface DistributionCenterOption {
   id: string;
@@ -10,22 +10,72 @@ interface DistributionCenterOption {
 
 interface LaunchFormProps {
   initialQuantity: number;
+  initialDate: string;
   initialCdId: string | null;
   availableCenters: DistributionCenterOption[];
   isManager: boolean;
 }
 
-export function LaunchForm({ initialQuantity, initialCdId, availableCenters, isManager }: LaunchFormProps) {
+interface QuantityResponse {
+  quantity?: number;
+  message?: string;
+}
+
+export function LaunchForm({
+  initialQuantity,
+  initialDate,
+  initialCdId,
+  availableCenters,
+  isManager
+}: LaunchFormProps) {
   const [quantity, setQuantity] = useState(String(initialQuantity));
+  const [orderDate, setOrderDate] = useState(initialDate);
   const [centerId, setCenterId] = useState(initialCdId ?? availableCenters[0]?.id ?? "");
   const [status, setStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingExisting, setIsLoadingExisting] = useState(false);
+
+  useEffect(() => {
+    async function loadExistingQuantity() {
+      if (!centerId || !orderDate) {
+        setQuantity("0");
+        return;
+      }
+
+      setIsLoadingExisting(true);
+      setStatus(null);
+
+      const query = new URLSearchParams({
+        distributionCenterId: centerId,
+        orderDate
+      });
+
+      const response = await fetch(`/api/lancamentos?${query.toString()}`);
+      const payload = (await response.json()) as QuantityResponse;
+
+      if (!response.ok) {
+        setStatus(payload.message ?? "Nao foi possivel carregar o lancamento da data.");
+        setIsLoadingExisting(false);
+        return;
+      }
+
+      setQuantity(String(payload.quantity ?? 0));
+      setIsLoadingExisting(false);
+    }
+
+    void loadExistingQuantity();
+  }, [centerId, orderDate]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!centerId) {
       setStatus("Selecione um centro de distribuicao.");
+      return;
+    }
+
+    if (!orderDate) {
+      setStatus("Selecione uma data valida.");
       return;
     }
 
@@ -46,6 +96,7 @@ export function LaunchForm({ initialQuantity, initialCdId, availableCenters, isM
       },
       body: JSON.stringify({
         distributionCenterId: centerId,
+        orderDate,
         quantity: parsedQuantity
       })
     });
@@ -84,8 +135,23 @@ export function LaunchForm({ initialQuantity, initialCdId, availableCenters, isM
       </div>
 
       <div>
+        <label htmlFor="orderDate" className="mb-1 block text-sm font-medium text-slate-700">
+          Data do lancamento
+        </label>
+        <input
+          id="orderDate"
+          type="date"
+          required
+          value={orderDate}
+          max={new Date().toISOString().slice(0, 10)}
+          onChange={(event) => setOrderDate(event.target.value)}
+          className="w-full rounded-lg border border-slate-300 px-3 py-2"
+        />
+      </div>
+
+      <div>
         <label htmlFor="quantity" className="mb-1 block text-sm font-medium text-slate-700">
-          Quantidade de pedidos de hoje
+          Quantidade de pedidos
         </label>
         <input
           id="quantity"
@@ -98,11 +164,12 @@ export function LaunchForm({ initialQuantity, initialCdId, availableCenters, isM
         />
       </div>
 
+      {isLoadingExisting ? <p className="text-sm text-slate-500">Carregando valor ja lancado para esta data...</p> : null}
       {status ? <p className="text-sm text-slate-700">{status}</p> : null}
 
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={isLoading || isLoadingExisting}
         className="rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700 disabled:opacity-70"
       >
         {isLoading ? "Salvando..." : "Salvar lancamento"}
