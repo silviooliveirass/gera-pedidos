@@ -1,4 +1,5 @@
 import { AppHeader } from "@/components/app-header";
+import { CsvImportForm } from "@/components/csv-import-form";
 import { LaunchForm } from "@/components/launch-form";
 import { requireProfile } from "@/lib/auth";
 import type { DistributionCenter } from "@/types/database";
@@ -43,15 +44,20 @@ export default async function LancamentosPage() {
 
       <section className="mb-4 rounded-xl bg-white p-4 shadow-sm">
         <h2 className="text-lg font-bold">Lancamento diario</h2>
-        <p className="text-sm text-slate-600">Regra: um lancamento por CD por dia (com edicao no mesmo dia).</p>
+        <p className="text-sm text-slate-600">Regra: um lancamento por CD por dia (com edicao em qualquer dia passado).</p>
       </section>
 
-      <LaunchForm
-        initialQuantity={initialQuantity}
-        initialCdId={selectedCdId}
-        availableCenters={typedCenters}
-        isManager={profile.role === "manager"}
-      />
+      <div className="space-y-4">
+        <LaunchForm
+          initialQuantity={initialQuantity}
+          initialDate={date}
+          initialCdId={selectedCdId}
+          availableCenters={typedCenters}
+          isManager={profile.role === "manager"}
+        />
+
+        {profile.role === "manager" ? <CsvImportForm /> : null}
+      </div>
     </main>
   );
 }
