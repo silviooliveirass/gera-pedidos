@@ -184,7 +184,13 @@ export default async function DashboardPage({
       </section>
 
       <section className="mb-6 rounded-xl bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-bold">CD destaque do mes</h2>
+        <div className="mb-2 flex flex-wrap items-baseline gap-2">
+          <h2 className="text-lg font-bold">CD destaque do mes</h2>
+          <span className="text-lg font-bold text-slate-400">|</span>
+          <p className="text-lg font-bold">
+            Periodo: {String(selectedMonth).padStart(2, "0")}/{selectedYear}
+          </p>
+        </div>
         {champion ? (
           <p className="mt-2 text-sm text-slate-700">
             <strong>
@@ -198,8 +204,13 @@ export default async function DashboardPage({
       </section>
 
       <section className="mb-6 rounded-xl bg-white p-4 shadow-sm">
-        <h2 className="mb-4 text-lg font-bold">Ranking mensal por CD</h2>
-
+        <div className="mb-4 flex flex-wrap items-baseline gap-2">
+          <h2 className="text-lg font-bold">Ranking mensal por CD</h2>
+          <span className="text-lg font-bold text-slate-400">|</span>
+          <p className="text-lg font-bold">
+            Periodo: {String(selectedMonth).padStart(2, "0")}/{selectedYear}
+          </p>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px] border-collapse">
             <thead>
@@ -280,3 +291,4 @@ export default async function DashboardPage({
     </main>
   );
 }
+
