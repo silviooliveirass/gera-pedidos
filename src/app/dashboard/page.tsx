@@ -7,9 +7,45 @@ function toDateOnly(value: Date) {
   return value.toISOString().slice(0, 10);
 }
 
+function normalizeDateOnly(value: string) {
+  return value.slice(0, 10);
+}
+
 function toDateLabel(dateOnly: string) {
   const [year, month, day] = dateOnly.split("-");
   return `${day}/${month}/${year}`;
+}
+
+async function fetchAllOrdersByDateRange(supabase: any, start: string, end: string) {
+  const pageSize = 1000;
+  let from = 0;
+  const all: DailyOrder[] = [];
+
+  while (true) {
+    const to = from + pageSize - 1;
+
+    const { data, error } = await supabase
+      .from("daily_orders")
+      .select("id, distribution_center_id, order_date, quantity, created_by, updated_by, created_at, updated_at")
+      .gte("order_date", start)
+      .lte("order_date", end)
+      .range(from, to);
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    const chunk = (data ?? []) as DailyOrder[];
+    all.push(...chunk);
+
+    if (chunk.length < pageSize) {
+      break;
+    }
+
+    from += pageSize;
+  }
+
+  return { data: all, error: null };
 }
 
 interface DashboardSearchParams {
@@ -48,37 +84,36 @@ export default async function DashboardPage({
   const yearStart = `${selectedYear}-01-01`;
   const yearEnd = `${selectedYear}-12-31`;
 
-  const { data: orders, error: ordersError } = await supabase
-    .from("daily_orders")
-    .select("id, distribution_center_id, order_date, quantity, created_by, updated_by, created_at, updated_at")
-    .gte("order_date", yearStart)
-    .lte("order_date", yearEnd);
-
-  if (ordersError || !orders) {
-    throw new Error("Nao foi possivel carregar os lancamentos.");
-  }
-
-  const typedOrders = orders as DailyOrder[];
-  const today = toDateOnly(now);
-
   const monthStart = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-01`;
   const monthEndDate = new Date(Date.UTC(selectedYear, selectedMonth, 0));
   const monthEnd = toDateOnly(monthEndDate);
+  const today = toDateOnly(now);
+
+  const { data: yearOrders, error: yearOrdersError } = await fetchAllOrdersByDateRange(supabase, yearStart, yearEnd);
+  if (yearOrdersError || !yearOrders) {
+    throw new Error("Nao foi possivel carregar os lancamentos.");
+  }
+
+  const { data: monthOrders, error: monthOrdersError } = await fetchAllOrdersByDateRange(supabase, monthStart, monthEnd);
+  if (monthOrdersError || !monthOrders) {
+    throw new Error("Nao foi possivel carregar os lancamentos do mes.");
+  }
+
+  const typedYearOrders = yearOrders as DailyOrder[];
+  const typedMonthOrders = monthOrders as DailyOrder[];
 
   const filteredCenters = typedCenters.filter((center) => (selectedCenter === "all" ? true : center.id === selectedCenter));
 
   const centerSummaries = filteredCenters.map((center) => {
-    const centerOrders = typedOrders.filter((order) => order.distribution_center_id === center.id);
+    const centerYearOrders = typedYearOrders.filter((order) => order.distribution_center_id === center.id);
+    const centerMonthOrders = typedMonthOrders.filter((order) => order.distribution_center_id === center.id);
 
-    const totalDay = centerOrders
-      .filter((order) => order.order_date === today)
+    const totalDay = centerYearOrders
+      .filter((order) => normalizeDateOnly(order.order_date) === today)
       .reduce((sum, current) => sum + current.quantity, 0);
 
-    const totalMonth = centerOrders
-      .filter((order) => order.order_date >= monthStart && order.order_date <= monthEnd)
-      .reduce((sum, current) => sum + current.quantity, 0);
-
-    const totalYear = centerOrders.reduce((sum, current) => sum + current.quantity, 0);
+    const totalMonth = centerMonthOrders.reduce((sum, current) => sum + current.quantity, 0);
+    const totalYear = centerYearOrders.reduce((sum, current) => sum + current.quantity, 0);
 
     return {
       ...center,
@@ -95,16 +130,13 @@ export default async function DashboardPage({
   const totalMonthFiltered = centerSummaries.reduce((sum, current) => sum + current.totalMonth, 0);
   const totalYearFiltered = centerSummaries.reduce((sum, current) => sum + current.totalYear, 0);
 
-  const totalMonthGeneral = typedOrders
-    .filter((order) => order.order_date >= monthStart && order.order_date <= monthEnd)
-    .reduce((sum, current) => sum + current.quantity, 0);
-  const totalYearGeneral = typedOrders.reduce((sum, current) => sum + current.quantity, 0);
+  const totalMonthGeneral = typedMonthOrders.reduce((sum, current) => sum + current.quantity, 0);
+  const totalYearGeneral = typedYearOrders.reduce((sum, current) => sum + current.quantity, 0);
 
   const selectedCdEntries = selectedCdId
-    ? typedOrders
+    ? typedMonthOrders
         .filter((order) => order.distribution_center_id === selectedCdId)
-        .filter((order) => order.order_date >= monthStart && order.order_date <= monthEnd)
-        .sort((a, b) => a.order_date.localeCompare(b.order_date))
+        .sort((a, b) => normalizeDateOnly(a.order_date).localeCompare(normalizeDateOnly(b.order_date)))
     : [];
 
   const selectedCdCenter = selectedCdId ? centerMap.get(selectedCdId) : undefined;
@@ -276,7 +308,7 @@ export default async function DashboardPage({
               <tbody>
                 {selectedCdEntries.map((entry) => (
                   <tr key={entry.id} className="border-b border-slate-100 text-sm">
-                    <td className="py-2">{toDateLabel(entry.order_date)}</td>
+                    <td className="py-2">{toDateLabel(normalizeDateOnly(entry.order_date))}</td>
                     <td className="py-2">
                       {selectedCdCenter?.code} - {selectedCdCenter?.name}
                     </td>
@@ -291,4 +323,3 @@ export default async function DashboardPage({
     </main>
   );
 }
-

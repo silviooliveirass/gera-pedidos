@@ -12,6 +12,38 @@ function toDateLabel(dateOnly: string) {
   return `${day}/${month}/${year}`;
 }
 
+async function fetchAllOrdersByDateRange(supabase: any, start: string, end: string) {
+  const pageSize = 1000;
+  let from = 0;
+  const all: DailyOrder[] = [];
+
+  while (true) {
+    const to = from + pageSize - 1;
+
+    const { data, error } = await supabase
+      .from("daily_orders")
+      .select("id, distribution_center_id, order_date, quantity, created_by, updated_by, created_at, updated_at")
+      .gte("order_date", start)
+      .lte("order_date", end)
+      .range(from, to);
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    const chunk = (data ?? []) as DailyOrder[];
+    all.push(...chunk);
+
+    if (chunk.length < pageSize) {
+      break;
+    }
+
+    from += pageSize;
+  }
+
+  return { data: all, error: null };
+}
+
 function clampMonth(value: number) {
   if (!Number.isFinite(value)) return 1;
   return Math.min(12, Math.max(1, Math.floor(value)));
@@ -56,11 +88,7 @@ export default async function MesAtualPage({
   const typedCenters = centers as DistributionCenter[];
   const centerMap = new Map(typedCenters.map((center) => [center.id, center]));
 
-  const { data: orders, error: ordersError } = await supabase
-    .from("daily_orders")
-    .select("id, distribution_center_id, order_date, quantity, created_by, updated_by, created_at, updated_at")
-    .gte("order_date", monthStart)
-    .lte("order_date", monthEnd);
+  const { data: orders, error: ordersError } = await fetchAllOrdersByDateRange(supabase, monthStart, monthEnd);
 
   if (ordersError || !orders) {
     throw new Error("Nao foi possivel carregar os lancamentos do mes selecionado.");
