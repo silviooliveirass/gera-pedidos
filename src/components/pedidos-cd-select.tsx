@@ -1,5 +1,6 @@
-﻿"use client";
+"use client";
 
+import type { Route } from "next";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 interface CdOption {
@@ -21,7 +22,7 @@ export function PedidosCdSelect({ options, selectedCdId }: PedidosCdSelectProps)
   function handleChange(nextCdId: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("cd", nextCdId);
-    router.push(`${pathname}?${params.toString()}`);
+    router.push(`${pathname}?${params.toString()}` as Route);
   }
 
   return (
