@@ -12,7 +12,9 @@ export function AppHeader({ profile }: AppHeaderProps) {
     <header className="mb-6 rounded-xl bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <CompanyLogo size="md" />
+          <Link href="/" aria-label="Ir para a pagina inicial" className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+            <CompanyLogo size="md" />
+          </Link>
           <div>
             <h1 className="text-xl font-bold text-slate-900">Gera Pedidos</h1>
             <p className="text-sm text-slate-600">

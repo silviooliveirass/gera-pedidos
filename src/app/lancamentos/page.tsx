@@ -1,4 +1,4 @@
-import { AppHeader } from "@/components/app-header";
+import { SidebarLayout } from "@/components/sidebar-layout";
 import { CsvImportForm } from "@/components/csv-import-form";
 import { LaunchForm } from "@/components/launch-form";
 import { requireProfile } from "@/lib/auth";
@@ -39,9 +39,7 @@ export default async function LancamentosPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-6">
-      <AppHeader profile={profile} />
-
+    <SidebarLayout profile={profile}>
       <section className="mb-4 rounded-xl bg-white p-4 shadow-sm">
         <h2 className="text-lg font-bold">Lancamento diario</h2>
         <p className="text-sm text-slate-600">Regra: um lancamento por CD por dia (com edicao em qualquer dia passado).</p>
@@ -58,6 +56,6 @@ export default async function LancamentosPage() {
 
         {profile.role === "manager" ? <CsvImportForm /> : null}
       </div>
-    </main>
+    </SidebarLayout>
   );
 }

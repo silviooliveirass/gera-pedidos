@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AppHeader } from "@/components/app-header";
+import { SidebarLayout } from "@/components/sidebar-layout";
 import { requireProfile } from "@/lib/auth";
 import type { DailyOrder, DistributionCenter } from "@/types/database";
 
@@ -120,14 +120,12 @@ export default async function MesAtualPage({
     : [];
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-6">
-      <AppHeader profile={profile} />
-
+    <SidebarLayout profile={profile}>
       <section className="mb-6 rounded-xl bg-white p-4 shadow-sm">
         <h2 className="text-lg font-bold">Visao Mensal</h2>
         <p className="text-sm text-slate-600">Escolha o periodo e clique no CD para ver todos os dias lancados.</p>
 
-        <form className="mt-4 grid gap-3 md:grid-cols-4">
+        <form className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <label className="text-sm">
             <span className="mb-1 block font-medium">Ano</span>
             <input
@@ -250,6 +248,6 @@ export default async function MesAtualPage({
           </div>
         )}
       </section>
-    </main>
+    </SidebarLayout>
   );
 }
