@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { Route } from "next";
 
 interface AppSidebarProps {
   collapsed: boolean;
@@ -10,7 +11,7 @@ interface AppSidebarProps {
 type IconName = "dashboard" | "orders" | "monthly" | "entries";
 
 interface SidebarLink {
-  href: string;
+  href: Route;
   label: string;
   icon: IconName;
 }
